@@ -1,4 +1,5 @@
-
+# dag file 
+#import libraries
 from airflow import DAG
 import pandas
 from datetime import timedelta, datetime
@@ -18,6 +19,7 @@ from airflow.operators import dummy_operator
 YESTERDAY = datetime.now() - timedelta(days=1)
 DAG_NAME = "capstone_dag"
 
+#default parameters of the dag
 default_args = {
     'owner': 'capstone1-project',
     'depends_on_past': False,
@@ -29,6 +31,7 @@ default_args = {
     'retry_delay': timedelta(minutes=2),
 }
 
+#This dag parameters will be applied to all the dags
 dag = DAG(
     dag_id="capstone_dag",
     default_args=default_args,
@@ -38,6 +41,7 @@ dag = DAG(
     max_active_runs=5,
 )
 
+#This method pulls the data from GCS bucket and performs the data processing on the data and then upload the data to gcs bucket.
 def data_processing(self):
     fs = gcsfs.GCSFileSystem(project='capstone1-project-326220')
     with fs.open('gs://currency-bucket-egen/capstone_data.csv') as f:
@@ -63,7 +67,7 @@ data_processing = python_operator.PythonOperator(
     python_callable=data_processing,
     dag=dag
 )
-
+#loads the datat from gcs to big Query.
 load_csv = GoogleCloudStorageToBigQueryOperator(
     task_id='load_csv',
     bucket='currency-bucket-egen',
@@ -80,6 +84,7 @@ load_csv = GoogleCloudStorageToBigQueryOperator(
     write_disposition='WRITE_TRUNCATE',
     dag=dag)
 
+#This is how the dag will work.
 start >> data_processing >> load_csv >> end
 
 
